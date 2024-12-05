@@ -28,10 +28,7 @@ const SettingsPage = () => {
           {THEMES.map((t) => (
             <button
               key={t}
-              className={`
-                group flex flex-col items-center gap-1.5 p-2 rounded-lg transition-colors
-                ${theme === t ? "bg-base-300 border-5 outline-dotted rounded-full" : "hover:bg-base-200/50 rounded-full"}
-              `}
+              className={`group flex flex-col items-center gap-1.5 p-2 rounded-lg transition-colors ${theme === t ? "bg-base-300 border-5 outline-dotted rounded-full" : "hover:bg-base-200/50 rounded-full"}`}
               onClick={() => setTheme(t)}
             >
               <span className="text-[15px] font-medium truncate w-full text-center">
@@ -66,10 +63,7 @@ const SettingsPage = () => {
                     >
                       <div
                         className={`max-w-[80%] rounded-xl p-3 shadow-sm ${
-                          message.isSent
-                            ? "bg-accent text-accent-content"
-                            : "bg-base-200"
-                        }`}
+                          message.isSent ? "bg-accent text-accent-content" : "bg-base-200"}`}
                       >
                         <p className="text-sm">{message.content}</p>
                         <p className={`text-[10px] mt-1.5${message.isSent? "text-accent-content/70": "text-base-content/70"}`}>
