@@ -1,4 +1,4 @@
-import { MessageSquareDot } from "lucide-react";
+import { Fan } from "lucide-react";
 const NoChatSelected = () => {
   return (
     
@@ -6,8 +6,8 @@ const NoChatSelected = () => {
         <div className="max-w-md text-center space-y-6">
           <div className="flex justify-center gap-4 mb-4">
             <div className="relative">
-              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-                <MessageSquareDot className="w-8 h-8 text-accent " />
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center">
+                <Fan className="w-20 h-20 text-accent animate-spin" />
               </div>
             </div>
           </div>

@@ -8,7 +8,7 @@ import SettingsPage from "./pages/SettingsPage.jsx";
 import { useAuthStore } from "./store/useAuthStore.js";
 import { useThemeStore } from "./store/useThemeStore.js";
 import { useEffect } from "react";
-import {Loader} from "lucide-react"
+import {Fan} from "lucide-react"
 import { Toaster } from "react-hot-toast";
 
 
@@ -27,7 +27,7 @@ const App = () => {
   if (isCheckingAuth && !authUser)
     return (
       <div className="flex items-center justify-center h-screen">
-        <Loader className="size-12 animate-spin text-accent" />
+        <Fan className="size-20 animate-spin text-accent" />
       </div>
     );
 

@@ -66,7 +66,7 @@ const SettingsPage = () => {
                           message.isSent ? "bg-accent text-accent-content" : "bg-base-200"}`}
                       >
                         <p className="text-sm">{message.content}</p>
-                        <p className={`text-[10px] mt-1.5${message.isSent? "text-accent-content/70": "text-base-content/70"}`}>
+                        <p className={`text-[10px] mt-1.5 ${message.isSent? "text-accent-content/70": "text-base-content/70"}`}>
                           12:00 PM
                         </p>
                       </div>
