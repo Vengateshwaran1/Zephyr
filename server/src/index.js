@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import cors from "cors";
+import cron from "node-cron";
 
 import path from "path";
 
@@ -24,6 +25,11 @@ app.use(
     credentials: true,
   })
 );
+
+const tempDir = path.join(process.cwd(), "tmp");
+cron.schedule("0 0 * * *", () => {
+  console.log("running a task every day");
+});
 
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
