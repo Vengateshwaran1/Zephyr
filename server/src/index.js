@@ -26,10 +26,7 @@ app.use(
   })
 );
 
-const tempDir = path.join(process.cwd(), "tmp");
-cron.schedule("0 0 * * *", () => {
-  console.log("running a task every day");
-});
+
 
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
