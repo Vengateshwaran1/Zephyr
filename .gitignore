@@ -11,6 +11,8 @@ node_modules
 dist
 dist-ssr
 *.local
+compose.yaml
+zep.pem
 
 # Editor directories and files
 .vscode/*
