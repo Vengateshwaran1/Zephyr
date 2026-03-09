@@ -2,6 +2,17 @@ import { generateToken } from "../lib/utils.js";
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import cloudinary from "../lib/cloudinary.js";
+import {
+  getCachedUser,
+  setCachedUser,
+  invalidateUserCache,
+} from "../lib/redisCache.js";
+import { trackDailyActiveUser } from "../lib/analytics.js";
+
+// ══════════════════════════════════════════════════════════
+//  AUTH CONTROLLER — REDIS ENHANCED
+//  Now with user caching and analytics tracking
+// ══════════════════════════════════════════════════════════
 
 export const signup = async (req, res) => {
   const { fullName, email, password } = req.body;
@@ -33,12 +44,20 @@ export const signup = async (req, res) => {
       generateToken(newUser._id, res);
       await newUser.save();
 
-      res.status(201).json({
+      const userData = {
         _id: newUser._id,
         fullName: newUser.fullName,
         email: newUser.email,
         profilePic: newUser.profilePic,
-      });
+      };
+
+      // Cache the new user in Redis
+      await setCachedUser(newUser._id.toString(), userData);
+
+      // Track as daily active user
+      await trackDailyActiveUser(newUser._id.toString());
+
+      res.status(201).json(userData);
     } else {
       res.status(400).json({ message: "Invalid user data" });
     }
@@ -64,12 +83,20 @@ export const login = async (req, res) => {
 
     generateToken(user._id, res);
 
-    res.status(200).json({
+    const userData = {
       _id: user._id,
       fullName: user.fullName,
       email: user.email,
       profilePic: user.profilePic,
-    });
+    };
+
+    // Cache user profile in Redis
+    await setCachedUser(user._id.toString(), userData);
+
+    // Track as daily active user
+    await trackDailyActiveUser(user._id.toString());
+
+    res.status(200).json(userData);
   } catch (error) {
     console.log("Error in login controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
@@ -99,8 +126,20 @@ export const updateProfile = async (req, res) => {
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { profilePic: uploadResponse.secure_url },
-      { new: true }
+      { new: true },
     );
+
+    // Invalidate user cache so fresh data is served
+    await invalidateUserCache(userId.toString());
+
+    // Re-cache with updated data
+    const userData = {
+      _id: updatedUser._id,
+      fullName: updatedUser.fullName,
+      email: updatedUser.email,
+      profilePic: updatedUser.profilePic,
+    };
+    await setCachedUser(userId.toString(), userData);
 
     res.status(200).json(updatedUser);
   } catch (error) {
@@ -109,8 +148,13 @@ export const updateProfile = async (req, res) => {
   }
 };
 
-export const checkAuth = (req, res) => {
+export const checkAuth = async (req, res) => {
   try {
+    const userId = req.user._id.toString();
+
+    // Track as daily active user
+    await trackDailyActiveUser(userId);
+
     res.status(200).json(req.user);
   } catch (error) {
     console.log("Error in checkAuth controller", error.message);

@@ -37,7 +37,7 @@ const ProfilePage = () => {
               <img
                 src={selectedImg || authUser.profilePic || "/avatar.png"}
                 alt="Profile"
-                className="size-32 rounded-full object-cover border-4 border-accent"
+                className="size-32 rounded-full object-cover border-4 border-primary"
               />
               <label
                 htmlFor="avatar-upload"
@@ -49,7 +49,7 @@ const ProfilePage = () => {
                   ${isUpdatingProfile ? "animate-pulse pointer-events-none" : ""}
                 `}
               >
-                <Camera className="text-accent" />
+                <Camera className="text-primary" />
                 <input
                   type="file"
                   id="avatar-upload"
@@ -60,7 +60,7 @@ const ProfilePage = () => {
                 />
               </label>
             </div>
-            <p className="text-sm text-accent">
+            <p className="text-sm text-primary">
               {isUpdatingProfile ? "Uploading..." : "Click the camera icon to update your photo"}
             </p>
           </div>
@@ -68,7 +68,7 @@ const ProfilePage = () => {
           <div className="space-y-6">
             <div className="space-y-1.5">
               <div className="text-sm text-zinc-400 flex items-center gap-2">
-                <User className="w-4 h-4 text-accent/80" />
+                <User className="w-4 h-4 text-primary/80" />
                 Full Name
               </div>
               <p className="px-4 py-2 bg-base-200 rounded-lg border ">{authUser?.fullName}</p>
@@ -76,7 +76,7 @@ const ProfilePage = () => {
 
             <div className="space-y-1.5">
               <div className="text-sm text-zinc-400 flex items-center gap-2">
-                <Mail className="w-4 h-4 text-accent/80" />
+                <Mail className="w-4 h-4 text-primary/80" />
                 Email Address
               </div>
               <p className="px-4 py-2 bg-base-200 rounded-lg border">{authUser?.email}</p>

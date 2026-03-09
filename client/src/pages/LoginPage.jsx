@@ -26,7 +26,7 @@ const LoginPage = () => {
                 className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20
               transition-colors"
               >
-                <Fan className="w-6 h-6 text-accent" />
+                <Fan className="w-6 h-6 text-primary" />
               </div>
               <h1 className="text-2xl font-bold mt-2">Welcome Back</h1>
               <p className="text-base-content/60">Sign in to your account</p>
@@ -40,14 +40,16 @@ const LoginPage = () => {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-accent/40" />
+                  <Mail className="h-5 w-5 text-primary/40" />
                 </div>
                 <input
                   type="email"
-                  className={`input input-bordered input-accent w-full pl-10 rounded-full`}
+                  className={`input input-bordered input-primary w-full pl-10 rounded-full`}
                   placeholder="you@example.com"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
                 />
               </div>
             </div>
@@ -58,14 +60,16 @@ const LoginPage = () => {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-accent/40" />
+                  <Lock className="h-5 w-5 text-primary/40" />
                 </div>
                 <input
                   type={showPassword ? "text" : "password"}
-                  className={`input input-bordered input-accent w-full pl-10 rounded-full`}
+                  className={`input input-bordered input-primary w-full pl-10 rounded-full`}
                   placeholder="••••••••"
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
                 />
                 <button
                   type="button"
@@ -73,18 +77,22 @@ const LoginPage = () => {
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-accent/80" />
+                    <EyeOff className="h-5 w-5 text-primary/80" />
                   ) : (
-                    <Eye className="h-5 w-5 text-accent/80" />
+                    <Eye className="h-5 w-5 text-primary/80" />
                   )}
                 </button>
               </div>
             </div>
 
-            <button type="submit" className="btn btn-accent w-full rounded-badge" disabled={isLoggingIn}>
+            <button
+              type="submit"
+              className="btn btn-primary w-full rounded-badge"
+              disabled={isLoggingIn}
+            >
               {isLoggingIn ? (
                 <>
-                  <Loader2 className="h-5 w-5 animate-spin text-accent" />
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
                   Loading...
                 </>
               ) : (
@@ -96,7 +104,7 @@ const LoginPage = () => {
           <div className="text-center">
             <p className="text-base-content/60">
               Don&apos;t have an account?{" "}
-              <Link to="/signup" className="link link-accent">
+              <Link to="/signup" className="link link-primary">
                 Create account
               </Link>
             </p>

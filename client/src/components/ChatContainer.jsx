@@ -6,26 +6,17 @@ import MessageInput from "./MessageInput";
 import MessageSkeleton from "./skeletons/MessageSkeleton";
 import { useAuthStore } from "../store/useAuthStore";
 import { formatMessageTime } from "../lib/utils";
+import { Check, CheckCheck } from "lucide-react";
 
 const ChatContainer = () => {
-  const {
-    messages,
-    getMessages,
-    isMessagesLoading,
-    selectedUser,
-    subscribeToMessages,
-    unsubscribeFromMessages,
-  } = useChatStore();
+  const { messages, getMessages, isMessagesLoading, selectedUser } =
+    useChatStore();
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
 
   useEffect(() => {
     getMessages(selectedUser._id);
-
-    subscribeToMessages();
-
-    return () => unsubscribeFromMessages();
-  }, [selectedUser._id, getMessages, subscribeToMessages, unsubscribeFromMessages]);
+  }, [selectedUser._id, getMessages]);
 
   useEffect(() => {
     if (messageEndRef.current && messages) {
@@ -44,10 +35,10 @@ const ChatContainer = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-auto">
+    <div className="flex-1 flex flex-col overflow-auto bg-base-100/50">
       <ChatHeader />
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
         {messages.map((message) => (
           <div
             key={message._id}
@@ -71,7 +62,13 @@ const ChatContainer = () => {
                 {formatMessageTime(message.createdAt)}
               </time>
             </div>
-            <div className="chat-bubble flex flex-col bg-accent text-accent-content">
+            <div
+              className={`chat-bubble flex flex-col ${
+                message.senderId === authUser._id
+                  ? "bg-primary text-primary-content"
+                  : "bg-base-200 text-base-content shadow-sm"
+              }`}
+            >
               {message.image && (
                 <img
                   src={message.image}
@@ -81,6 +78,16 @@ const ChatContainer = () => {
               )}
               {message.text && <p>{message.text}</p>}
             </div>
+            {/* Read receipt indicator — only for sent messages */}
+            {message.senderId === authUser._id && (
+              <div className="chat-footer opacity-50 text-xs flex items-center gap-1 mt-0.5">
+                {message.isRead ? (
+                  <CheckCheck className="size-3.5 text-blue-400" />
+                ) : (
+                  <Check className="size-3.5" />
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>
