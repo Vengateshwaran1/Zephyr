@@ -5,6 +5,8 @@ import { redisClient } from "./redis.js";
 //  Provides ultra-fast full-text search indexing for chat msgs
 // ══════════════════════════════════════════════════════════
 
+export let isRedisSearchAvailable = false;
+
 export const initRedisSearch = async () => {
   try {
     // Attempt to create the index
@@ -31,21 +33,26 @@ export const initRedisSearch = async () => {
       "NUMERIC",
       "SORTABLE"
     );
-    // Override RediSearch default minimum prefix length (which is usually 2)
-    // to allow searching for a single character (e.g. "h*" matching "hello")
     await redisClient.call("FT.CONFIG", "SET", "MINPREFIX", "1");
+    isRedisSearchAvailable = true;
     console.log("✅ RediSearch index 'idx:messages' created successfully.");
   } catch (error) {
     if (error.message.includes("Index already exists")) {
+      isRedisSearchAvailable = true;
       console.log("✅ RediSearch index 'idx:messages' already exists.");
+    } else if (error.message.includes("unknown command")) {
+      // RediSearch module is not installed (e.g. Render's standard Redis)
+      isRedisSearchAvailable = false;
+      console.log("ℹ️  RediSearch not available on this Redis instance. Falling back to MongoDB search.");
     } else {
+      isRedisSearchAvailable = false;
       console.error("❌ Failed to create RediSearch index:", error.message);
     }
   }
 };
 
 export const addMessageToIndex = async (msg) => {
-  if (!msg || !msg.text) return; // Only index text messages
+  if (!isRedisSearchAvailable || !msg || !msg.text) return; // Only index if available
 
   const msgId = msg._id.toString();
   const args = [
@@ -64,27 +71,22 @@ export const addMessageToIndex = async (msg) => {
 
   try {
     await redisClient.hset(...args);
-    // Optional: set expiry to avoid filling RAM with very old messages (e.g., 30 days)
-    // await redisClient.expire(`msg:${msgId}`, 30 * 24 * 60 * 60); 
   } catch (err) {
     console.error("❌ Failed to add message to RediSearch:", err.message);
   }
 };
 
 export const searchMessagesInIndex = async (searchQuery, myId, chatPartnerId) => {
+  if (!isRedisSearchAvailable) return null; // Return null to trigger fallback
+
   try {
-    // NOTE: RediSearch tag matching removes hyphens, hyphens need escaping in query if raw, 
-    // but object IDs don't have hyphens.
     let queryStr = "";
     if (chatPartnerId) {
-      // To find messages between myId and chatPartnerId:
       queryStr = `@text:(${searchQuery}*) ((@senderId:{${myId}} @receiverId:{${chatPartnerId}}) | (@senderId:{${chatPartnerId}} @receiverId:{${myId}}))`;
     } else {
-      // Global search for any message I sent or received:
       queryStr = `@text:(${searchQuery}*) ((@senderId:{${myId}}) | (@receiverId:{${myId}}))`;
     }
 
-    // Execute FT.SEARCH
     const result = await redisClient.call(
       "FT.SEARCH", 
       "idx:messages", 
@@ -96,10 +98,8 @@ export const searchMessagesInIndex = async (searchQuery, myId, chatPartnerId) =>
     if (!result || result.length <= 1) return [];
 
     const messages = [];
-    // The first element is the number of total responses
-    // Then pairs of [key, [array of fields]]
     for (let i = 1; i < result.length; i += 2) {
-      const key = result[i]; // e.g. "msg:66a123..."
+      const key = result[i];
       const fieldsArray = result[i + 1];
       
       const msgObj = { _id: key.replace("msg:", "") };
@@ -107,7 +107,6 @@ export const searchMessagesInIndex = async (searchQuery, myId, chatPartnerId) =>
         msgObj[fieldsArray[j]] = fieldsArray[j + 1];
       }
       
-      // Convert createdAt back to ISO string for frontend compatibility
       if (msgObj.createdAt) {
         msgObj.createdAt = new Date(parseInt(msgObj.createdAt)).toISOString();
       }
@@ -115,10 +114,11 @@ export const searchMessagesInIndex = async (searchQuery, myId, chatPartnerId) =>
       messages.push(msgObj);
     }
 
-    // Sort ascending for chat UI display (oldest to newest locally inside the chat)
     return messages.reverse();
   } catch (err) {
-    console.error("❌ RedisSearch FT.SEARCH error:", err.message);
-    return [];
+    if (!err.message.includes("unknown command")) {
+      console.error("❌ RedisSearch FT.SEARCH error:", err.message);
+    }
+    return null; // Return null to trigger fallback
   }
 };

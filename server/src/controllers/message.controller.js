@@ -192,10 +192,40 @@ export const searchMessages = async (req, res) => {
       return res.status(400).json({ error: "Search query is required" });
     }
 
-    // Perform lightning-fast search in Redis
-    const messages = await searchMessagesInIndex(q, myId, userToChatId);
+    // Attempt lightning-fast search in Redis
+    let messages = await searchMessagesInIndex(q, myId, userToChatId);
     
-    res.status(200).json(messages);
+    // If RedisSearch is unavailable, fallback to MongoDB
+    if (messages === null) {
+      console.log("ℹ️  Falling back to MongoDB for message search");
+      
+      const searchCriteria = {
+        text: { $regex: q, $options: "i" }
+      };
+
+      if (userToChatId) {
+        // Search in a specific conversation
+        searchCriteria.$or = [
+          { senderId: myId, receiverId: userToChatId },
+          { senderId: userToChatId, receiverId: myId }
+        ];
+      } else {
+        // Global search for any message I sent or received
+        searchCriteria.$or = [
+          { senderId: myId },
+          { receiverId: myId }
+        ];
+      }
+
+      messages = await Message.find(searchCriteria)
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .lean();
+        
+      messages = messages.reverse();
+    }
+    
+    res.status(200).json(messages || []);
   } catch (error) {
     console.error("Error in searchMessages controller:", error.message);
     res.status(500).json({ error: "Internal server error" });
