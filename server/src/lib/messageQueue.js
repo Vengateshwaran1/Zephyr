@@ -12,15 +12,22 @@ import Message from "../models/message.model.js";
 import { invalidateMessageCache } from "./redisCache.js";
 import { io, getReceiverSocketId } from "./socket.js";
 
-import Redis from "ioredis";
-
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
+let connection = { maxRetriesPerRequest: null };
 
-const connection = new Redis(REDIS_URL, {
-  maxRetriesPerRequest: null,
-  enableReadyCheck: false,
-  lazyConnect: true,
-});
+try {
+  const parsedUrl = new URL(REDIS_URL);
+  connection = {
+    host: parsedUrl.hostname,
+    port: parseInt(parsedUrl.port || "6379"),
+    password: parsedUrl.password || undefined,
+    username: parsedUrl.username || undefined,
+    tls: parsedUrl.protocol === "rediss:" ? {} : undefined,
+    maxRetriesPerRequest: null,
+  };
+} catch (err) {
+  console.error("Error parsing REDIS_URL for BullMQ", err);
+}
 
 let imageQueue = null;
 let notificationQueue = null;
