@@ -8,14 +8,20 @@ const MessageInput = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
-  const { sendMessage, selectedUser, emitTyping, emitStopTyping } =
-    useChatStore();
+  const [isSending, setIsSending] = useState(false);
+  const {
+    sendMessage,
+    selectedUser,
+    selectedGroup,
+    emitTyping,
+    emitStopTyping,
+  } = useChatStore();
 
   // Debounced typing indicator
   const handleTyping = useCallback(() => {
-    if (!selectedUser) return;
+    if (!selectedUser && !selectedGroup) return;
 
-    emitTyping(selectedUser._id);
+    emitTyping(selectedUser?._id, selectedGroup?._id);
 
     // Clear previous timeout
     if (typingTimeoutRef.current) {
@@ -24,9 +30,9 @@ const MessageInput = () => {
 
     // Set stop typing after 2 seconds of no input
     typingTimeoutRef.current = setTimeout(() => {
-      emitStopTyping(selectedUser._id);
+      emitStopTyping(selectedUser?._id, selectedGroup?._id);
     }, 2000);
-  }, [selectedUser, emitTyping, emitStopTyping]);
+  }, [selectedUser, selectedGroup, emitTyping, emitStopTyping]);
 
   const handleTextChange = (e) => {
     setText(e.target.value);
@@ -61,22 +67,33 @@ const MessageInput = () => {
       clearTimeout(typingTimeoutRef.current);
     }
 
+    // Optimistically clear the input so user can't spam multi-send
+    const messageToSend = text.trim();
+    const imageToSend = imagePreview;
+    
+    setText("");
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    
+    setIsSending(true);
+
     try {
       await sendMessage({
-        text: text.trim(),
-        image: imagePreview,
+        text: messageToSend,
+        image: imageToSend,
       });
-
-      setText("");
-      setImagePreview(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (error) {
       console.error("Failed to send message:", error);
+      // Restore input on failure
+      setText(messageToSend);
+      setImagePreview(imageToSend);
+    } finally {
+      setIsSending(false);
     }
   };
 
   return (
-    <div className="p-4 w-full bg-base-100/50 backdrop-blur-md border-t border-base-200/50">
+    <div className="mx-3 mb-3 sm:mx-6 sm:mb-6 p-3 sm:p-4 w-[calc(100%-1.5rem)] sm:w-[calc(100%-3rem)] glass-island rounded-[2rem] flex-shrink-0 z-20 sticky bottom-0">
       {imagePreview && (
         <div className="mb-3 flex items-center gap-2">
           <div className="relative group">
@@ -101,13 +118,14 @@ const MessageInput = () => {
         onSubmit={handleSendMessage}
         className="flex items-center gap-3 w-full"
       >
-        <div className="flex-1 flex items-center bg-base-200/50 rounded-[2rem] border border-base-300/50 focus-within:border-primary/50 focus-within:bg-base-100 transition-all shadow-sm pl-4 pr-1 py-1">
+          <div className={`flex-1 flex items-center bg-base-200/50 rounded-[2rem] border border-base-300/50 focus-within:border-primary/50 focus-within:bg-base-100 transition-all shadow-sm pl-4 pr-1 py-1 ${isSending ? 'opacity-50 pointer-events-none' : ''}`}>
           <input
             type="text"
             className="w-full bg-transparent outline-none h-10 text-sm placeholder-base-content/40"
-            placeholder="Type your message..."
+            placeholder={isSending ? "Sending..." : "Type your message..."}
             value={text}
             onChange={handleTextChange}
+            disabled={isSending}
           />
           <input
             type="file"
@@ -115,6 +133,7 @@ const MessageInput = () => {
             className="hidden"
             ref={fileInputRef}
             onChange={handleImageChange}
+            disabled={isSending}
           />
           <button
             type="button"
@@ -124,6 +143,7 @@ const MessageInput = () => {
                 : "text-base-content/40 hover:text-base-content/80"
             }`}
             onClick={() => fileInputRef.current?.click()}
+            disabled={isSending}
           >
             <Image size={18} />
           </button>
@@ -132,9 +152,9 @@ const MessageInput = () => {
         <button
           type="submit"
           className="btn btn-circle btn-primary shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow disabled:opacity-50 disabled:shadow-none"
-          disabled={!text.trim() && !imagePreview}
+          disabled={(!text.trim() && !imagePreview) || isSending}
         >
-          <Send size={18} />
+          {isSending ? <span className="loading loading-spinner loading-sm"></span> : <Send size={18} />}
         </button>
       </form>
     </div>

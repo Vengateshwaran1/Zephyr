@@ -23,6 +23,19 @@ export const protectRoute = async (req, res, next) => {
       return res.status(401).json({ message: "Unauthorized - Invalid Token" });
     }
 
+    // ── SECURITY: Check if token was blacklisted (logged out)
+    const { redisClient, REDIS_KEYS } = await import("../lib/redis.js");
+    if (redisClient && redisClient.status === "ready") {
+      const isBlacklisted = await redisClient.get(
+        REDIS_KEYS.BLACKLIST_TOKEN(token),
+      );
+      if (isBlacklisted) {
+        return res
+          .status(401)
+          .json({ message: "Unauthorized - Token Revoked" });
+      }
+    }
+
     // Try Redis cache first for user lookup
     let user = await getCachedUser(decoded.userId);
 
@@ -40,6 +53,7 @@ export const protectRoute = async (req, res, next) => {
         fullName: user.fullName,
         email: user.email,
         profilePic: user.profilePic,
+        role: user.role,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       });
@@ -51,5 +65,13 @@ export const protectRoute = async (req, res, next) => {
   } catch (error) {
     console.log("Error in protectRoute middleware: ", error.message);
     res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const adminRoute = (req, res, next) => {
+  if (req.user && req.user.role === "admin") {
+    next();
+  } else {
+    return res.status(403).json({ message: "Access denied - Admins only" });
   }
 };

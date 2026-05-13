@@ -56,6 +56,9 @@ redisPublisher.on("error", (err) => {
 
 // Redis key namespace — organized and consistent
 export const REDIS_KEYS = {
+  // Security
+  BLACKLIST_TOKEN: (token) => `blacklist:token:${token}`,
+
   // Cache
   USER_CACHE: (userId) => `cache:user:${userId}`,
   USERS_SIDEBAR: (userId) => `cache:sidebar:${userId}`,
@@ -72,8 +75,6 @@ export const REDIS_KEYS = {
   // Typing
   TYPING: (chatRoomId) => `typing:${chatRoomId}`,
 
-  // Rate limiting
-  RATE_LIMIT: (identifier, endpoint) => `ratelimit:${endpoint}:${identifier}`,
 
   // Read receipts
   READ_RECEIPT: (messageId) => `read:${messageId}`,

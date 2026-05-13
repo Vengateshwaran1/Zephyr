@@ -51,9 +51,9 @@ export const trackMessage = async (senderId, receiverId) => {
       conversationKey,
     );
 
-    // Track daily active user using a Set
+    // Track daily active user using HyperLogLog (memory efficient uniquely counts millions of users in 12kb)
     const dauKey = REDIS_KEYS.ANALYTICS_DAU(getDateKey());
-    pipeline.sadd(dauKey, senderId);
+    pipeline.pfadd(dauKey, senderId);
     pipeline.expire(dauKey, 172800); // 48 hours
 
     await pipeline.exec();
@@ -69,7 +69,7 @@ export const trackDailyActiveUser = async (userId) => {
   if (!isRedisReady()) return;
   try {
     const dauKey = REDIS_KEYS.ANALYTICS_DAU(getDateKey());
-    await redisClient.sadd(dauKey, userId);
+    await redisClient.pfadd(dauKey, userId);
     await redisClient.expire(dauKey, 172800);
   } catch (error) {
     console.error("Error tracking DAU:", error.message);
@@ -139,7 +139,7 @@ export const getDailyActiveUsers = async () => {
   if (!isRedisReady()) return 0;
   try {
     const dauKey = REDIS_KEYS.ANALYTICS_DAU(getDateKey());
-    return await redisClient.scard(dauKey);
+    return await redisClient.pfcount(dauKey);
   } catch (error) {
     return 0;
   }

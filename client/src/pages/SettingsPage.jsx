@@ -37,16 +37,15 @@ const SettingsPage = () => {
   };
 
   return (
-    <div className="min-h-screen container mx-auto px-4 pt-24 pb-10 max-w-6xl">
-      <div className="space-y-10">
+    <div className="min-h-screen pt-24 pb-12 px-4">
+      <div className="max-w-6xl mx-auto space-y-10">
         {/* ─── Header ────────────────────────────────────────────── */}
-        <div className="flex flex-col gap-2">
-          <h2 className="text-3xl md:text-4xl font-black tracking-tight text-base-content">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-3xl md:text-4xl font-black tracking-tight">
             Settings
           </h2>
-          <p className="text-base-content/60 font-medium text-lg">
-            Personalize your Zephyr experience with {THEMES.length} carefully
-            curated aesthetics and notification controls.
+          <p className="text-base-content/50 font-medium">
+            Personalize your Zephyr experience with {THEMES.length} carefully curated aesthetics.
           </p>
         </div>
 
@@ -55,7 +54,7 @@ const SettingsPage = () => {
           <h3 className="text-xl font-bold tracking-tight text-base-content flex items-center gap-2">
             <BellRing className="w-5 h-5 text-primary" /> Notifications
           </h3>
-          <div className="bg-base-100/95 backdrop-blur-2xl rounded-2xl border border-base-content/5 p-6 shadow-md max-w-2xl">
+          <div className="glass-panel rounded-[1.75rem] p-6 max-w-2xl">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
                 <h4 className="font-semibold text-lg">
@@ -93,7 +92,7 @@ const SettingsPage = () => {
             Live Preview{" "}
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
           </h3>
-          <div className="rounded-[2rem] border border-base-content/5 overflow-hidden bg-base-100/95 backdrop-blur-2xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)]">
+          <div className="glass-panel rounded-[2rem] overflow-hidden">
             <div className="p-4 sm:p-8 bg-base-200/50">
               <div className="max-w-2xl mx-auto">
                 {/* ── Fake Chat UI ── */}

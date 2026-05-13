@@ -4,13 +4,16 @@ import {
   getMessages,
   getUsersForSidebar,
   sendMessage,
+  searchMessages,
+  getLastSeenForUser,
 } from "../controllers/message.controller.js";
-import { messageRateLimiter } from "../middleware/rateLimiter.middleware.js";
 
 const router = express.Router();
 
 router.get("/users", protectRoute, getUsersForSidebar);
+router.get("/search", protectRoute, searchMessages);
+router.get("/lastseen/:userId", protectRoute, getLastSeenForUser);
 router.get("/:id", protectRoute, getMessages);
-router.post("/send/:id", protectRoute, messageRateLimiter, sendMessage);
+router.post("/send/:id", protectRoute, sendMessage);
 
 export default router;

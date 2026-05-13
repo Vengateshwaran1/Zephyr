@@ -10,6 +10,7 @@
 import cloudinary from "./cloudinary.js";
 import Message from "../models/message.model.js";
 import { invalidateMessageCache } from "./redisCache.js";
+import { io, getReceiverSocketId } from "./socket.js";
 
 const connection = {
   host: process.env.REDIS_HOST || "localhost",
@@ -38,7 +39,7 @@ const initQueues = async () => {
     imageWorker = new Worker(
       "image-processing",
       async (job) => {
-        const { messageId, imageData, senderId, receiverId } = job.data;
+        const { messageId, imageData, senderId, receiverId, groupId } = job.data;
         console.log(`🖼️  Processing image for message ${messageId}...`);
 
         const uploadResponse = await cloudinary.uploader.upload(imageData, {
@@ -52,7 +53,19 @@ const initQueues = async () => {
           image: uploadResponse.secure_url,
         });
 
-        await invalidateMessageCache(senderId, receiverId);
+        if (groupId) {
+          // Emit socket event to the entire group room so UI updates asynchronously
+          io.to(groupId).emit("messageUpdated", { messageId, image: uploadResponse.secure_url });
+        } else if (receiverId) {
+          await invalidateMessageCache(senderId, receiverId);
+          
+          // Emit socket event to both sender and receiver
+          const recvSocketId = await getReceiverSocketId(receiverId);
+          const sendSocketId = await getReceiverSocketId(senderId);
+          
+          if (recvSocketId) io.to(recvSocketId).emit("messageUpdated", { messageId, image: uploadResponse.secure_url });
+          if (sendSocketId) io.to(sendSocketId).emit("messageUpdated", { messageId, image: uploadResponse.secure_url });
+        }
 
         console.log(`✅ Image processed for message ${messageId}`);
         return { messageId, imageUrl: uploadResponse.secure_url };
@@ -100,13 +113,14 @@ export const queueImageUpload = async (
   messageId,
   imageData,
   senderId,
-  receiverId,
+  receiverId = null,
+  groupId = null,
 ) => {
   if (!imageQueue) return null;
   try {
     const job = await imageQueue.add(
       "upload-image",
-      { messageId, imageData, senderId, receiverId },
+      { messageId, imageData, senderId, receiverId, groupId },
       {
         attempts: 3,
         backoff: { type: "exponential", delay: 2000 },

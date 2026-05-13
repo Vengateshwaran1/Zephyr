@@ -7,6 +7,8 @@ import {
   getOnlineUsers,
   getReceiverSocketId as getReceiverSocketIdFromPresence,
 } from "./presenceManager.js";
+import { redisClient, REDIS_KEYS } from "./redis.js";
+import { updateLastSeen } from "./lastSeenTracker.js";
 
 // ══════════════════════════════════════════════════════════
 //  SOCKET.IO SERVER
@@ -76,27 +78,79 @@ io.on("connection", async (socket) => {
 
   if (userId && userId !== "undefined") {
     await setUserOnline(userId, socket.id);
+    await updateLastSeen(userId); // Update last-seen timestamp on connect
 
     // Broadcast updated online user list to all connected clients
     const onlineUsers = await getOnlineUsers();
     io.emit("getOnlineUsers", onlineUsers);
   }
 
-  // ─── Typing Indicators ──────────────────────────────
+  // ─── Group Chat ─────────────────────────────────────
 
-  socket.on("typing", async ({ targetUserId }) => {
-    if (!userId || !targetUserId) return;
-    const targetSocketId = await getReceiverSocketIdFromPresence(targetUserId);
-    if (targetSocketId) {
-      io.to(targetSocketId).emit("userTyping", { userId, isTyping: true });
+  socket.on("joinGroup", (groupId) => {
+    socket.join(groupId);
+    console.log(`👥 User ${userId} joined group: ${groupId}`);
+  });
+
+  socket.on("leaveGroup", (groupId) => {
+    socket.leave(groupId);
+    console.log(`👥 User ${userId} left group: ${groupId}`);
+  });
+
+  // ─── Group "Seen By" ─────────────────────────────────
+  // When a user opens a group chat, mark recent messages as seen
+  socket.on("viewingGroupChat", async ({ groupId, messageIds }) => {
+    if (!userId || !groupId || !messageIds?.length) return;
+    try {
+      const { markMessagesBulkSeen, getBulkSeenCounts } = await import("./groupSeenTracker.js");
+      // Mark all provided messages as seen by this user (Redis Pipeline)
+      await markMessagesBulkSeen(messageIds, userId);
+      // Fetch updated seen counts for all messages
+      const seenMap = await getBulkSeenCounts(messageIds);
+      // Broadcast updated seen counts to the whole group room
+      io.to(groupId).emit("groupSeenUpdate", { groupId, seenMap });
+    } catch (err) {
+      console.error("viewingGroupChat error:", err.message);
     }
   });
 
-  socket.on("stopTyping", async ({ targetUserId }) => {
-    if (!userId || !targetUserId) return;
-    const targetSocketId = await getReceiverSocketIdFromPresence(targetUserId);
-    if (targetSocketId) {
-      io.to(targetSocketId).emit("userTyping", { userId, isTyping: false });
+  // ─── Typing Indicators ──────────────────────────────
+
+  socket.on("typing", async ({ targetUserId, groupId }) => {
+    if (!userId) return;
+
+    if (groupId) {
+      // Group Typing (Enterprise: Store in Redis with TTL)
+      const typingKey = REDIS_KEYS.TYPING(groupId);
+      await redisClient.sadd(typingKey, userId);
+      await redisClient.expire(typingKey, 5); // Auto-expire after 5s of inactivity
+
+      // Broadcast to group members EXCLUDING the sender
+      socket.to(groupId).emit("userTyping", { userId, groupId, isTyping: true });
+    } else if (targetUserId) {
+      // DM Typing
+      const targetSocketId =
+        await getReceiverSocketIdFromPresence(targetUserId);
+      if (targetSocketId) {
+        io.to(targetSocketId).emit("userTyping", { userId, isTyping: true });
+      }
+    }
+  });
+
+  socket.on("stopTyping", async ({ targetUserId, groupId }) => {
+    if (!userId) return;
+
+    if (groupId) {
+      const typingKey = REDIS_KEYS.TYPING(groupId);
+      await redisClient.srem(typingKey, userId);
+
+      socket.to(groupId).emit("userTyping", { userId, groupId, isTyping: false });
+    } else if (targetUserId) {
+      const targetSocketId =
+        await getReceiverSocketIdFromPresence(targetUserId);
+      if (targetSocketId) {
+        io.to(targetSocketId).emit("userTyping", { userId, isTyping: false });
+      }
     }
   });
 
@@ -134,6 +188,7 @@ io.on("connection", async (socket) => {
 
     if (userId && userId !== "undefined") {
       await setUserOffline(userId, socket.id);
+      await updateLastSeen(userId); // Record last-seen on disconnect
 
       const onlineUsers = await getOnlineUsers();
       io.emit("getOnlineUsers", onlineUsers);

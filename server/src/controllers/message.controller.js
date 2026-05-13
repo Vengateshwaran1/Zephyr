@@ -11,6 +11,8 @@ import {
 } from "../lib/redisCache.js";
 import { queueImageUpload, queueNotification } from "../lib/messageQueue.js";
 import { trackMessage } from "../lib/analytics.js";
+import { addMessageToIndex, searchMessagesInIndex } from "../lib/redisSearch.js";
+import { getLastSeen, updateLastSeen, formatLastSeen } from "../lib/lastSeenTracker.js";
 
 // ══════════════════════════════════════════════════════════
 //  MESSAGE CONTROLLER — REDIS ENHANCED
@@ -142,6 +144,9 @@ export const sendMessage = async (req, res) => {
 
     await newMessage.save();
 
+    // Index message in RedisSearch
+    await addMessageToIndex(newMessage);
+
     // If large image, queue it for background processing
     if (image && !imageUrl) {
       await queueImageUpload(
@@ -174,6 +179,43 @@ export const sendMessage = async (req, res) => {
     res.status(201).json(newMessage);
   } catch (error) {
     console.log("Error in sendMessage controller: ", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const searchMessages = async (req, res) => {
+  try {
+    const { q, userToChatId } = req.query;
+    const myId = req.user._id.toString();
+
+    if (!q) {
+      return res.status(400).json({ error: "Search query is required" });
+    }
+
+    // Perform lightning-fast search in Redis
+    const messages = await searchMessagesInIndex(q, myId, userToChatId);
+    
+    res.status(200).json(messages);
+  } catch (error) {
+    console.error("Error in searchMessages controller:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+/**
+ * GET /api/messages/lastseen/:userId
+ * Returns the last-seen timestamp for a user from Redis Sorted Set.
+ */
+export const getLastSeenForUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const ts = await getLastSeen(userId);
+    res.status(200).json({
+      userId,
+      lastSeen: ts,
+      formatted: formatLastSeen(ts),
+    });
+  } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }
 };

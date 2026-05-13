@@ -10,6 +10,7 @@ import {
   ChevronDown,
   Palette,
   ChevronRight,
+  Activity,
 } from "lucide-react";
 
 const Navbar = () => {
@@ -19,9 +20,10 @@ const Navbar = () => {
   const totalUnread = Object.values(unreadCounts).reduce((a, b) => a + b, 0);
 
   return (
-    <header className="bg-base-100/80 backdrop-blur-xl border-b border-base-300 fixed w-full top-0 z-40 transition-all shadow-sm">
-      <div className="container mx-auto px-4 h-16">
-        <div className="flex items-center justify-between h-full">
+    <header className="fixed top-0 left-0 right-0 z-40 flex justify-center pt-4 pointer-events-none">
+      <div className="pointer-events-auto w-full max-w-[1400px] mx-auto px-4">
+        <div className="glass-island rounded-[2rem] px-4 h-14 shadow-2xl shadow-black/10">
+          <div className="flex items-center justify-between h-full">
           {/* Logo */}
           <div className="flex items-center gap-8">
             <Link
@@ -142,6 +144,17 @@ const Navbar = () => {
                           My Profile
                         </Link>
                       </li>
+                      {authUser?.role === "admin" && (
+                        <li>
+                          <Link
+                            to="/analytics"
+                            className="flex items-center gap-3 px-4 py-2 text-sm font-medium hover:bg-base-300/50 rounded-xl transition-colors text-base-content"
+                          >
+                            <Activity className="w-[18px] h-[18px] text-base-content/60" />
+                            Analytics
+                          </Link>
+                        </li>
+                      )}
                       <li>
                         <Link
                           to="/settings"
@@ -184,6 +197,7 @@ const Navbar = () => {
             )}
           </div>
         </div>
+      </div>
       </div>
     </header>
   );

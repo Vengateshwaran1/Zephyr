@@ -1,5 +1,5 @@
 import express from "express";
-import { protectRoute } from "../middleware/auth.middleware.js";
+import { protectRoute, adminRoute } from "../middleware/auth.middleware.js";
 import {
   getDashboard,
   getHealth,
@@ -11,6 +11,6 @@ const router = express.Router();
 router.get("/health", getHealth);
 
 // Full analytics dashboard (auth required)
-router.get("/dashboard", protectRoute, getDashboard);
+router.get("/dashboard", protectRoute, adminRoute, getDashboard);
 
 export default router;

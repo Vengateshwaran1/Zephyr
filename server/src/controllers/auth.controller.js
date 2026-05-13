@@ -49,6 +49,7 @@ export const signup = async (req, res) => {
         fullName: newUser.fullName,
         email: newUser.email,
         profilePic: newUser.profilePic,
+        role: newUser.role,
       };
 
       // Cache the new user in Redis
@@ -88,6 +89,7 @@ export const login = async (req, res) => {
       fullName: user.fullName,
       email: user.email,
       profilePic: user.profilePic,
+      role: user.role,
     };
 
     // Cache user profile in Redis
@@ -103,8 +105,23 @@ export const login = async (req, res) => {
   }
 };
 
-export const logout = (req, res) => {
+export const logout = async (req, res) => {
   try {
+    const token = req.cookies.jwt;
+
+    // Revoke the token mathematically by putting it in Redis waitlist
+    if (token) {
+      const { redisClient, REDIS_KEYS } = await import("../lib/redis.js");
+      if (redisClient && redisClient.status === "ready") {
+        // Block the token for 7 days (maximum possible lifetime of our JWTs)
+        await redisClient.setex(
+          REDIS_KEYS.BLACKLIST_TOKEN(token),
+          7 * 24 * 60 * 60,
+          "revoked",
+        );
+      }
+    }
+
     res.cookie("jwt", "", { maxAge: 0 });
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
@@ -138,6 +155,7 @@ export const updateProfile = async (req, res) => {
       fullName: updatedUser.fullName,
       email: updatedUser.email,
       profilePic: updatedUser.profilePic,
+      role: updatedUser.role,
     };
     await setCachedUser(userId.toString(), userData);
 

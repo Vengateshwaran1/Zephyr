@@ -4,26 +4,29 @@ import ChatContainer from "../components/ChatContainer.jsx";
 import Sidebar from "../components/Sidebar.jsx";
 
 const HomePage = () => {
-  const { selectedUser } = useChatStore();
+  const { selectedUser, selectedGroup } = useChatStore();
+  const chatOpen = selectedUser || selectedGroup;
   return (
-    <div className="h-screen bg-base-200">
-      <div className="flex items-center justify-center pt-24 px-4 sm:px-6">
-        <div className="bg-base-100/95 backdrop-blur-2xl rounded-[2rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] border border-base-content/5 w-full max-w-7xl h-[85vh]">
-          <div className="flex h-full overflow-hidden">
+    <div className="h-screen w-full flex items-center justify-center pt-16">
+      <div className="flex items-center justify-center w-full px-2 sm:px-4 md:px-8">
+        <div className="glass-panel rounded-[2rem] w-full max-w-[1400px] h-[calc(100vh-5.5rem)] overflow-hidden">
+          <div className="flex h-full">
+            {/* Sidebar Wrapper */}
             <div
-              className={`h-full w-full lg:w-72 flex-shrink-0 transition-all duration-300 ${
-                selectedUser ? "hidden lg:flex" : "flex"
+              className={`h-full border-r border-white/5 transition-all duration-500 ease-in-out ${
+                chatOpen ? "hidden lg:flex lg:w-80 xl:w-96" : "flex w-full"
               }`}
             >
               <Sidebar />
             </div>
 
+            {/* Chat Container Wrapper */}
             <div
-              className={`h-full flex-1 transition-all duration-300 ${
-                !selectedUser ? "hidden lg:flex" : "flex"
+              className={`h-full flex-1 transition-all duration-500 ease-in-out relative ${
+                !chatOpen ? "hidden lg:flex" : "flex"
               }`}
             >
-              {!selectedUser ? <NoChatSelected /> : <ChatContainer />}
+              {!chatOpen ? <NoChatSelected /> : <ChatContainer />}
             </div>
           </div>
         </div>

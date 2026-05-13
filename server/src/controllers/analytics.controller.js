@@ -28,8 +28,19 @@ export const getDashboard = async (req, res) => {
       redis: {
         status: redisHealthy ? "connected" : "disconnected",
       },
-      analytics,
-      cache: cacheStats,
+      analytics: {
+        totalMessages: analytics?.totalMessages || 0,
+        activeUsers: analytics?.dailyActiveUsers || 0,
+        hourlyMessages: analytics?.hourlyMessages || [],
+        topConversations: analytics?.topConversations || [],
+        generatedAt: analytics?.generatedAt,
+      },
+      cache: {
+        ...cacheStats,
+        memoryUsage: cacheStats
+          ? `${(cacheStats.totalKeys * 0.5).toFixed(1)} KB est.`
+          : "N/A",
+      },
       queues: queueStats,
       onlineUsers: onlineCount,
     });

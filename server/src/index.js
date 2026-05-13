@@ -6,10 +6,12 @@ import path from "path";
 
 import { connectDB } from "./lib/db.js";
 import { checkRedisHealth, closeRedisConnections } from "./lib/redis.js";
+import { initRedisSearch } from "./lib/redisSearch.js";
 import { closeQueues } from "./lib/messageQueue.js";
 
 import authRoutes from "./routes/auth.route.js";
 import messageRoutes from "./routes/message.route.js";
+import groupRoutes from "./routes/group.route.js";
 import analyticsRoutes from "./routes/analytics.route.js";
 import { app, server } from "./lib/socket.js";
 
@@ -30,6 +32,7 @@ app.use(
 // ─── API Routes ──────────────────────────────────────────
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/groups", groupRoutes);
 app.use("/api/analytics", analyticsRoutes);
 
 // ─── Production Static Serving ───────────────────────────
@@ -55,22 +58,10 @@ server.listen(PORT, async () => {
   const redisHealthy = await checkRedisHealth();
   if (redisHealthy) {
     console.log("  ✅ Redis connected and healthy");
+    await initRedisSearch();
   } else {
     console.warn("  ⚠️ Redis not available — some features may be degraded");
   }
-
-  console.log("═══════════════════════════════════════════");
-  console.log("  Redis Features Active:");
-  console.log("    📡 Pub/Sub Message Bus");
-  console.log("    ⚡ Response Caching (User, Messages)");
-  console.log("    🛡️ Sliding Window Rate Limiting");
-  console.log("    🟢 Online Presence (Redis Hash)");
-  console.log("    📬 BullMQ Job Queues (Image, Notif)");
-  console.log("    ⌨️  Typing Indicators (Auto-Expire)");
-  console.log("    ✅ Message Read Receipts");
-  console.log("    📊 Analytics (DAU, Hourly, Top Chats)");
-  console.log("    🔄 Socket.IO Redis Adapter");
-  console.log("═══════════════════════════════════════════");
 });
 
 // ─── Graceful Shutdown ───────────────────────────────────
