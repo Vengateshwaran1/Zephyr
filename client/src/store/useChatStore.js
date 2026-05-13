@@ -27,7 +27,7 @@ export const useChatStore = create((set, get) => ({
     set({ isUsersLoading: true });
     try {
       const res = await axiosInstance.get("/messages/users");
-      set({ users: res.data });
+      set({ users: Array.isArray(res.data) ? res.data : [] });
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to load contacts");
     } finally {
@@ -39,7 +39,7 @@ export const useChatStore = create((set, get) => ({
     set({ isGroupsLoading: true });
     try {
       const res = await axiosInstance.get("/groups/all");
-      set({ groups: res.data });
+      set({ groups: Array.isArray(res.data) ? res.data : [] });
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to load groups");
     } finally {
@@ -245,7 +245,7 @@ export const useChatStore = create((set, get) => ({
       set((state) => ({
         lastSeenMap: { ...state.lastSeenMap, [userId]: res.data },
       }));
-    } catch (_) {}
+    } catch { /* ignore */ }
   },
 
   // ─── Real-Time Subscriptions ─────────────────────────────
@@ -278,7 +278,7 @@ export const useChatStore = create((set, get) => ({
         gain.connect(ctx.destination);
         osc.start();
         osc.stop(ctx.currentTime + 0.25);
-      } catch (err) {}
+      } catch { /* ignore */ }
     };
 
     socket.on("newMessage", (newMessage) => {
