@@ -1,8 +1,7 @@
 import axios from "axios"
 
-export const axiosInstance = axios.create({
-  baseURL: import.meta.env.MODE === "development"
-    ? (import.meta.env.VITE_BACKEND_URL || "http://localhost:3001/api")
-    : "/api",
-  withCredentials: true,
-})
+export const axiosInstance=axios.create({
+    // baseURL:import.meta.env.MODE === "development" ? "http://localhost:3001/api" : "/api",
+    baseURL:import.meta.env.VITE_BACKEND_URL,
+    withCredentials:true,
+})
