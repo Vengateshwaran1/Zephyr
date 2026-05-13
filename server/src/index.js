@@ -22,9 +22,13 @@ const __dirname = path.resolve();
 
 app.use(express.json({ limit: "10mb" })); // Increased for base64 images
 app.use(cookieParser());
+const allowedOrigins = process.env.NODE_ENV === "production"
+  ? (process.env.CLIENT_URL || true) // true = allow same-origin (Render)
+  : "http://localhost:5173";
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: allowedOrigins,
     credentials: true,
   }),
 );

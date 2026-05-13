@@ -3,12 +3,12 @@ import { axiosInstance } from "../lib/axios.js";
 import toast from "react-hot-toast";
 import { io } from "socket.io-client";
 
-// Socket.IO must connect to the server root, NOT the /api path
-// Strip "/api" suffix if present (VITE_BACKEND_URL includes /api for axios)
-const BACKEND_ROOT = (
-  import.meta.env.VITE_BACKEND_URL || "http://localhost:3001/api"
-).replace(/\/api$/, "");
-const BASE_URL = import.meta.env.MODE === "development" ? BACKEND_ROOT : "/";
+// In production (Render), client & server are on the same origin — connect to "/"
+// In development, connect to the local backend server
+const BASE_URL = import.meta.env.MODE === "development"
+  ? (import.meta.env.VITE_BACKEND_URL || "http://localhost:3001/api").replace(/\/api$/, "")
+  : "/";
+
 
 export const useAuthStore = create((set, get) => ({
   authUser: null,
