@@ -12,13 +12,15 @@ import Message from "../models/message.model.js";
 import { invalidateMessageCache } from "./redisCache.js";
 import { io, getReceiverSocketId } from "./socket.js";
 
-const connection = {
-  host: process.env.REDIS_HOST || "localhost",
-  port: parseInt(process.env.REDIS_PORT || "6379"),
+import Redis from "ioredis";
+
+const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
+
+const connection = new Redis(REDIS_URL, {
   maxRetriesPerRequest: null,
   enableReadyCheck: false,
   lazyConnect: true,
-};
+});
 
 let imageQueue = null;
 let notificationQueue = null;
